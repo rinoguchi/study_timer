@@ -38,7 +38,7 @@ class _TimerSamplePageState extends State<TimerSamplePage> {
               if (_timer != null && _timer.isActive) _timer.cancel();
             },
             child: Text("Stop"),
-          ), // This trailing comma makes auto-formatting nicer for build methods.
+          ),
           FloatingActionButton(
             onPressed: () {
               // タイマー起動
@@ -52,7 +52,7 @@ class _TimerSamplePageState extends State<TimerSamplePage> {
               );
             },
             child: Text("Start"),
-          ), // This trailing comma makes auto-formatting nicer for build methods.
+          ),
         ],
       )
     ]));
