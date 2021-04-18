@@ -152,11 +152,11 @@ class _TimerPageState extends State<TimerPage> {
         barrierDismissible: false, // ダイアログの外をタップしてダイアログを閉じれないように
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text('Reset Confirm'),
-            content: Text('Reset Timer OK?'),
+            title: Text('Confirm'),
+            content: Text('Are you sure you want to reset timer ?'),
             actions: <Widget>[
               TextButton(
-                child: Text('cancel'),
+                child: Text('Cancel'),
                 onPressed: () {
                   Navigator.of(context).pop(); // これをやらないとダイアログが閉じない
                 },
