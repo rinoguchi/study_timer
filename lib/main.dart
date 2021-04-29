@@ -203,7 +203,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     flutterLocalNotificationsPlugin.zonedSchedule(
         notificationId,
         'Time is over',
-        'Please stop the alarm.',
+        'Let\'s study again!!',
         tz.TZDateTime.now(tz.local).add(duration),
         NotificationDetails(
             android: AndroidNotificationDetails('your channel id', 'your channel name', 'your channel description',
