@@ -5,9 +5,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 import 'package:intl/intl.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
-void main() {
+void main() async {
+  _setupTimeZone();
   runApp(TimerApp());
+}
+
+// タイムゾーンを設定する
+Future<void> _setupTimeZone() async {
+  tz.initializeTimeZones();
+  var tokyo = tz.getLocation('Asia/Tokyo');
+  tz.setLocalLocation(tokyo);
 }
 
 /// タイマーアプリ
@@ -37,30 +47,83 @@ class TimerPage extends StatefulWidget {
 enum TimerMode { Study, Play }
 
 /// タイマーページの状態を管理するクラス
-class _TimerPageState extends State<TimerPage> {
-  Timer _timer;
-  bool _isTimerStarted;
-  TimerMode _timerMode;
-
-  DateTime _studyTime;
-  DateTime _playTime;
-  DateTime _totalTime;
-
+class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
   final DateFormat formatter = DateFormat('HH:mm:ss');
   final Alarm _alarm = new Alarm();
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+
+  Timer _timer;
+  bool _isTimerStarted; // タイマーが実行中かどうか（PlayでもStudyでもOK）
+  TimerMode _timerMode; // タイマーモード（Play or Study）
+
+  DateTime _studyTime; // 勉強した時間
+  DateTime _playTime; // 遊んだ時間
+  DateTime _differenceTime; // 勉強した時間 - 遊んだ時間
+
+  bool _isTimerPaused; // タイマー起動中にバックグラウンド遷移してタイマー停止されたかどうか
+  DateTime _pausedTime; // バックグラウンドに遷移した時間
+  Duration _willStopDuration; // タイマーが停止するまでの経過時間
+  int _notificationId; // 通知ID
 
   @override
   void initState() {
     super.initState();
     _initialize();
+    WidgetsBinding.instance.addObserver(this);
   }
 
+  /// アプリのライフサイクルが変更された際に実行される処理
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      setState(_handleOnPaused);
+    } else if (state == AppLifecycleState.resumed) {
+      setState(_handleOnResumed);
+    }
+  }
+
+  /// アプリがバックグラウンドに遷移した際のハンドラ
+  void _handleOnPaused() {
+    print('app is paused.');
+    if (!_isTimerStarted) return; // タイマーが起動してない時は何もしない
+
+    _stopTimer();
+    _isTimerPaused = true;
+    _pausedTime = DateTime.now(); // バックグラウンドに遷移した時間を記録
+    if (_timerMode == TimerMode.Play && _differenceTime.compareTo(DateTime.utc(0, 0, 0)) > 0) {
+      _willStopDuration = _studyTime.difference(_playTime);
+      _notificationId = _scheduleLocalNotification(_willStopDuration); //
+    }
+  }
+
+  /// アプリがフォアグラウンドに復帰した際のハンドラ
+  void _handleOnResumed() {
+    print('app is resumed.');
+    if (!_isTimerPaused) return; // タイマー起動中にバックグラウンド遷移してない場合は何もしない
+    Duration backgroundDuration = DateTime.now().difference(_pausedTime);
+    if (_timerMode == TimerMode.Play && _willStopDuration != null && _willStopDuration.compareTo(backgroundDuration) < 0) {
+      _playTime = _playTime.add(_differenceTime.difference(DateTime.utc(0, 0, 0))); // Play時間を時間を進める
+    } else {
+      if (_timerMode == TimerMode.Study) {
+        _studyTime = _studyTime.add(backgroundDuration);
+      } else {
+        _playTime = _playTime.add(backgroundDuration);
+      }
+      _startTimer(_timerMode);
+    }
+    if (_notificationId != null) flutterLocalNotificationsPlugin.cancel(_notificationId); // 通知をキャンセル
+    _differenceTime = DateTime.utc(0, 0, 0).add(_studyTime.difference(_playTime));
+    _isTimerPaused = false;
+    _willStopDuration = null;
+    _notificationId = null;
+  }
+
+  // 初期化処理
   void _initialize() {
     if (_timer != null && _timer.isActive) _timer.cancel();
     _studyTime = DateTime.utc(0, 0, 0);
     _playTime = DateTime.utc(0, 0, 0);
-    _totalTime = DateTime.utc(0, 0, 0);
+    _differenceTime = DateTime.utc(0, 0, 0);
     _timerMode = null;
     _isTimerStarted = false;
   }
@@ -83,7 +146,7 @@ class _TimerPageState extends State<TimerPage> {
           } else {
             _playTime = _playTime.add(Duration(seconds: 1));
           }
-          _totalTime = DateTime.utc(0, 0, 0).add(_studyTime.difference(_playTime));
+          _differenceTime = DateTime.utc(0, 0, 0).add(_studyTime.difference(_playTime));
         });
         _handleTimeIsOver();
       },
@@ -99,13 +162,13 @@ class _TimerPageState extends State<TimerPage> {
   }
 
   /// タイマーが00:00:00になった際のハンドラー
-  /// タイマー停止・アラーム開始・ダイアログ表示・ローカル通知を行う
+  /// タイマー停止・アラーム開始・ダイアログ表示を行う
+  /// この処理はフォアグラウンドでしか呼ばれないので、ローカル通知は行わない
   void _handleTimeIsOver() async {
-    if (_totalTime != DateTime.utc(0, 0, 0) || _timerMode == TimerMode.Study) return;
+    if (_differenceTime != DateTime.utc(0, 0, 0) || _timerMode == TimerMode.Study) return;
     _stopTimer();
     _alarm.start();
     _showTimeOverDialog();
-    _showLocalNotification();
   }
 
   /// タイマー終了通知をダイアログ表示
@@ -131,18 +194,23 @@ class _TimerPageState extends State<TimerPage> {
   }
 
   /// タイマー終了をローカル通知
-  void _showLocalNotification() {
+  int _scheduleLocalNotification(Duration duration) {
+    print('notification scheduled.');
     flutterLocalNotificationsPlugin.initialize(
       InitializationSettings(android: AndroidInitializationSettings('app_icon'), iOS: IOSInitializationSettings()), // app_icon.pngを配置
     );
-    flutterLocalNotificationsPlugin.show(
-        0,
+    int notificationId = DateTime.now().hashCode;
+    flutterLocalNotificationsPlugin.zonedSchedule(
+        notificationId,
         'Time is over',
         'Please stop the alarm.',
+        tz.TZDateTime.now(tz.local).add(duration),
         NotificationDetails(
             android: AndroidNotificationDetails('your channel id', 'your channel name', 'your channel description',
                 importance: Importance.max, priority: Priority.high),
-            iOS: IOSNotificationDetails()));
+            iOS: IOSNotificationDetails()),
+        uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime);
+    return notificationId;
   }
 
   /// リセットダイアログを表示
@@ -194,9 +262,9 @@ class _TimerPageState extends State<TimerPage> {
                   Container(
                       width: double.infinity,
                       child: Text(
-                        _totalTime.isBefore(DateTime.utc(0, 0, 0))
-                            ? '-' + DateFormat.Hms().format(DateTime.utc(0, 0, 0).add(DateTime.utc(0, 0, 0).difference(_totalTime)))
-                            : DateFormat.Hms().format(_totalTime),
+                        _differenceTime.isBefore(DateTime.utc(0, 0, 0))
+                            ? '-' + DateFormat.Hms().format(DateTime.utc(0, 0, 0).add(DateTime.utc(0, 0, 0).difference(_differenceTime)))
+                            : DateFormat.Hms().format(_differenceTime),
                         style: Theme.of(context).textTheme.headline2,
                         textAlign: TextAlign.center,
                       )),
