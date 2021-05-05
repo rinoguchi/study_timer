@@ -8,6 +8,8 @@ import 'package:intl/intl.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'edit.dart';
+
 void main() async {
   _setupTimeZone();
   runApp(TimerApp());
@@ -126,6 +128,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
     _differenceTime = DateTime.utc(0, 0, 0);
     _timerMode = null;
     _isTimerStarted = false;
+    _isTimerPaused = false;
   }
 
   /// タイマーを開始する
@@ -241,108 +244,129 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
         });
   }
 
+  /// 手作業で時間を変更する
+  void _editTime() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => EditPage(_studyTime, _playTime)),
+    );
+    if (result == null) return;
+    setState(() {
+      _studyTime = result['studyTime'];
+      _playTime = result['playTime'];
+      _differenceTime = DateTime.utc(0, 0, 0).add(_studyTime.difference(_playTime));
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     // setStateが呼ばれる度に実行される
     // flutterがこのbuild関数を最速で実行するよう最適化してるので、個別にwidget変更を反映するより、全体をまとめてbuildする方がよい
     return Scaffold(
-        appBar: AppBar(
-          // ステートが所属するwidget情報には`widget`でアクセスできる
-          title: Text(widget.title),
-        ),
-        body: Center(
-          // 一つの子を持ち、中央に配置するレイアウト用のwidget
-          child: SizedBox(
-            width: 280,
-            child: Column(
-                // 複数の子を持ち、縦方向に並べるwidget
-                // Flutter DevToolsを開いて、Debug Printを有効にすると各Widgetの骨組みを確認できる
-                mainAxisAlignment: MainAxisAlignment.center, // 主軸（縦軸）方向に中央寄せ
-                children: <Widget>[
-                  Container(
-                      width: double.infinity,
-                      child: Text(
-                        _differenceTime.isBefore(DateTime.utc(0, 0, 0))
-                            ? '-' + DateFormat.Hms().format(DateTime.utc(0, 0, 0).add(DateTime.utc(0, 0, 0).difference(_differenceTime)))
-                            : DateFormat.Hms().format(_differenceTime),
-                        style: Theme.of(context).textTheme.headline2,
-                        textAlign: TextAlign.center,
-                      )),
-                  Container(
-                    margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
-                    height: 60,
-                    alignment: Alignment.center,
-                    child: Table(columnWidths: {
-                      0: FixedColumnWidth(70),
-                      1: FixedColumnWidth(70),
-                    }, children: [
-                      TableRow(children: [
-                        Text("Studied:", style: Theme.of(context).textTheme.bodyText2, textAlign: TextAlign.start),
-                        Text(DateFormat.Hms().format(_studyTime), style: Theme.of(context).textTheme.bodyText2, textAlign: TextAlign.start),
-                      ]),
-                      TableRow(children: [
-                        Text("Played:", style: Theme.of(context).textTheme.bodyText2, textAlign: TextAlign.start),
-                        Text(DateFormat.Hms().format(_playTime), style: Theme.of(context).textTheme.bodyText2, textAlign: TextAlign.start),
-                      ])
-                    ]),
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      SizedBox(
-                          width: 80,
-                          height: 80,
-                          child: ElevatedButton(
-                              // FloatingActionButton だと、disabledの制御ができない
-                              child: Text('Play'),
-                              onPressed: !_isTimerStarted ? () => {_startTimer(TimerMode.Play)} : null, // nullを指定すると無効化
-                              style: ElevatedButton.styleFrom(
-                                primary: Colors.red,
-                                onPrimary: Colors.white,
-                                shape: const CircleBorder(),
-                                side: _timerMode == TimerMode.Play ? BorderSide(color: Colors.red, width: 3) : BorderSide.none,
-                              ))),
-                      SizedBox(
-                          width: 80,
-                          height: 80,
-                          child: ElevatedButton(
-                            child: Text('Stop'),
-                            onPressed: _isTimerStarted ? _stopTimer : null,
-                            style: ElevatedButton.styleFrom(
-                              primary: Colors.blueGrey,
-                              onPrimary: Colors.white,
-                              shape: const CircleBorder(),
-                            ),
-                          )),
-                      SizedBox(
-                          width: 80,
-                          height: 80,
-                          child: ElevatedButton(
-                            child: Text('Study'),
-                            onPressed: !_isTimerStarted ? () => {_startTimer(TimerMode.Study)} : null,
-                            style: ElevatedButton.styleFrom(
-                              primary: Colors.blue,
-                              onPrimary: Colors.white,
-                              shape: const CircleBorder(),
-                              side: _timerMode == TimerMode.Study ? BorderSide(color: Colors.blue, width: 3) : BorderSide.none,
-                            ),
-                          ))
-                    ],
-                  ),
-                  Container(
-                      width: double.infinity,
-                      height: 100,
-                      alignment: Alignment.bottomRight,
-                      child: TextButton(
-                        child: Text(
-                          'reset',
-                          style: TextStyle(decoration: TextDecoration.underline),
-                        ),
-                        onPressed: _showResetDialog,
-                      )),
+      appBar: AppBar(
+        // ステートが所属するwidget情報には`widget`でアクセスできる
+        title: Text(widget.title),
+      ),
+      body: Center(
+        // 一つの子を持ち、中央に配置するレイアウト用のwidget
+        child: Column(
+            // 複数の子を持ち、縦方向に並べるwidget
+            // Flutter DevToolsを開いて、Debug Printを有効にすると各Widgetの骨組みを確認できる
+            mainAxisAlignment: MainAxisAlignment.center, // 主軸（縦軸）方向に中央寄せ
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              Container(
+                  width: double.infinity,
+                  child: Text(
+                    _differenceTime.isBefore(DateTime.utc(0, 0, 0))
+                        ? '-' + DateFormat.Hms().format(DateTime.utc(0, 0, 0).add(DateTime.utc(0, 0, 0).difference(_differenceTime)))
+                        : DateFormat.Hms().format(_differenceTime),
+                    style: Theme.of(context).textTheme.headline2,
+                    textAlign: TextAlign.center,
+                  )),
+              Container(
+                margin: EdgeInsets.fromLTRB(0, 0, 0, 10),
+                height: 60,
+                alignment: Alignment.center,
+                child: Table(columnWidths: {
+                  0: FixedColumnWidth(100),
+                  1: FixedColumnWidth(70),
+                }, children: [
+                  TableRow(children: [
+                    Text("Studied Time:", style: Theme.of(context).textTheme.bodyText2, textAlign: TextAlign.start),
+                    Text(DateFormat.Hms().format(_studyTime), style: Theme.of(context).textTheme.bodyText2, textAlign: TextAlign.start),
+                  ]),
+                  TableRow(children: [
+                    Text("Played Time:", style: Theme.of(context).textTheme.bodyText2, textAlign: TextAlign.start),
+                    Text(DateFormat.Hms().format(_playTime), style: Theme.of(context).textTheme.bodyText2, textAlign: TextAlign.start),
+                  ])
                 ]),
-          ),
-        ));
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  SizedBox(
+                      width: 80,
+                      height: 80,
+                      child: ElevatedButton(
+                          // FloatingActionButton だと、disabledの制御ができない
+                          child: Text('Play'),
+                          onPressed: !_isTimerStarted ? () => {_startTimer(TimerMode.Play)} : null, // nullを指定すると無効化
+                          style: ElevatedButton.styleFrom(
+                            primary: Colors.red,
+                            onPrimary: Colors.white,
+                            shape: const CircleBorder(),
+                            side: _timerMode == TimerMode.Play ? BorderSide(color: Colors.red, width: 3) : BorderSide.none,
+                          ))),
+                  SizedBox(
+                      width: 80,
+                      height: 80,
+                      child: ElevatedButton(
+                        child: Text('Stop'),
+                        onPressed: _isTimerStarted ? _stopTimer : null,
+                        style: ElevatedButton.styleFrom(
+                          primary: Colors.blueGrey,
+                          onPrimary: Colors.white,
+                          shape: const CircleBorder(),
+                        ),
+                      )),
+                  SizedBox(
+                      width: 80,
+                      height: 80,
+                      child: ElevatedButton(
+                        child: Text('Study'),
+                        onPressed: !_isTimerStarted ? () => {_startTimer(TimerMode.Study)} : null,
+                        style: ElevatedButton.styleFrom(
+                          primary: Colors.blue,
+                          onPrimary: Colors.white,
+                          shape: const CircleBorder(),
+                          side: _timerMode == TimerMode.Study ? BorderSide(color: Colors.blue, width: 3) : BorderSide.none,
+                        ),
+                      ))
+                ],
+              ),
+              Container(
+                  width: double.infinity,
+                  alignment: Alignment.bottomRight,
+                  child: Row(mainAxisAlignment: MainAxisAlignment.end, crossAxisAlignment: CrossAxisAlignment.end, children: [
+                    TextButton(
+                      child: Text(
+                        'edit',
+                        style: TextStyle(decoration: TextDecoration.underline),
+                      ),
+                      onPressed: _isTimerStarted ? null : _editTime,
+                    ),
+                    TextButton(
+                      child: Text(
+                        'reset',
+                        style: TextStyle(decoration: TextDecoration.underline),
+                      ),
+                      onPressed: _showResetDialog,
+                    ),
+                  ])),
+            ]),
+      ),
+    );
   }
 }
 
