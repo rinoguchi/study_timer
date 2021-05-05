@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_ringtone_player/flutter_ringtone_player.dart';
 
 void main() {
-  runApp(MaterialApp(home: AlarmSamplePage()));
+  runApp(MaterialApp(home: AlarmPage()));
 }
 
-class AlarmSamplePage extends StatelessWidget {
+class AlarmPage extends StatelessWidget {
   final Alarm _alarm = new Alarm();
   @override
   Widget build(BuildContext context) {

@@ -7,7 +7,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 void main() async {
   await setup();
-  runApp(MaterialApp(home: NotificationSamplePage()));
+  runApp(MaterialApp(home: NotificationPage()));
 }
 
 Future<void> setup() async {
@@ -16,7 +16,7 @@ Future<void> setup() async {
   tz.setLocalLocation(tokyo);
 }
 
-class NotificationSamplePage extends StatelessWidget {
+class NotificationPage extends StatelessWidget {
   // インスタンス生成
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
 

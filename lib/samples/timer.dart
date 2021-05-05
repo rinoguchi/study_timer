@@ -4,15 +4,15 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 void main() {
-  runApp(MaterialApp(home: TimerSamplePage()));
+  runApp(MaterialApp(home: TimerPage()));
 }
 
-class TimerSamplePage extends StatefulWidget {
+class TimerPage extends StatefulWidget {
   @override
-  _TimerSamplePageState createState() => _TimerSamplePageState();
+  _TimerPageState createState() => _TimerPageState();
 }
 
-class _TimerSamplePageState extends State<TimerSamplePage> {
+class _TimerPageState extends State<TimerPage> {
   Timer _timer;
   DateTime _time;
 
