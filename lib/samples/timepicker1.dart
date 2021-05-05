@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 
 void main() {
   runApp(MaterialApp(home: TimePickerPage()));
@@ -35,7 +34,7 @@ class _TimePickerPageState extends State<TimePickerPage> {
         ),
         onPressed: () async {
           final TimeOfDay timeOfDay = await showTimePicker(context: context, initialTime: _timeOfDay);
-          setState(() => {_timeOfDay = timeOfDay});
+          if (timeOfDay != null) setState(() => {_timeOfDay = timeOfDay});
         },
       ),
     ])));

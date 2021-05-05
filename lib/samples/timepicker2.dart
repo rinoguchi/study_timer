@@ -24,19 +24,16 @@ class _TimePickerPageState extends State<TimePickerPage> {
         body: Center(
             child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.center, children: [
       Text(
-        _timeOfDay.format(context),
+        MaterialLocalizations.of(context).formatTimeOfDay(_timeOfDay, alwaysUse24HourFormat: true),
         style: Theme.of(context).textTheme.headline2,
       ),
       TextButton(
-        child: Text(
-          'edit',
-          style: TextStyle(decoration: TextDecoration.underline),
-        ),
+        child: Text('edit', style: TextStyle(decoration: TextDecoration.underline)),
         onPressed: () async {
           final timeOfDay = await showTimePicker(
             context: context,
             initialTime: _timeOfDay,
-            initialEntryMode: TimePickerEntryMode.input,
+            // initialEntryMode: TimePickerEntryMode.input,
             builder: (BuildContext context, Widget child) {
               return MediaQuery(
                 data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
@@ -44,7 +41,7 @@ class _TimePickerPageState extends State<TimePickerPage> {
               );
             },
           );
-          setState(() => {_timeOfDay = timeOfDay});
+          if (timeOfDay != null) setState(() => {_timeOfDay = timeOfDay});
         },
       ),
     ])));

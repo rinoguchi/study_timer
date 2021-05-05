@@ -49,7 +49,7 @@ packages:
       name: cupertino_icons
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "1.0.2"
+    version: "1.0.3"
   fake_async:
     dependency: transitive
     description:
@@ -68,7 +68,7 @@ packages:
       name: flutter_local_notifications
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "5.0.0+1"
+    version: "5.0.0+3"
   flutter_local_notifications_platform_interface:
     dependency: transitive
     description:
@@ -76,6 +76,13 @@ packages:
       url: "https://pub.dartlang.org"
     source: hosted
     version: "3.0.0"
+  flutter_picker:
+    dependency: "direct main"
+    description:
+      name: flutter_picker
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "2.0.1"
   flutter_ringtone_player:
     dependency: "direct main"
     description:
@@ -200,4 +207,4 @@ packages:
     version: "2.1.0"
 sdks:
   dart: ">=2.12.0 <3.0.0"
-  flutter: ">=1.12.13+hotfix.5"
+  flutter: ">=1.17.0"
