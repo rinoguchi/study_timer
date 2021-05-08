@@ -245,10 +245,10 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
   }
 
   /// 手作業で時間を変更する
-  void _editTime() async {
+  void _startEdit() async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => EditPage(_studyTime, _playTime)),
+      MaterialPageRoute(builder: (context) => EditPage(_studyTime, _playTime), maintainState: false, fullscreenDialog: true),
     );
     if (result == null) return;
     setState(() {
@@ -354,7 +354,7 @@ class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
                         'edit',
                         style: TextStyle(decoration: TextDecoration.underline),
                       ),
-                      onPressed: _isTimerStarted ? null : _editTime,
+                      onPressed: _isTimerStarted ? null : _startEdit,
                     ),
                     TextButton(
                       child: Text(

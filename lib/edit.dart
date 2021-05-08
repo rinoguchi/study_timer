@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 
 /// 編集ページ
 class EditPage extends StatefulWidget {
-  final String title = 'Manual Change';
+  final String title = 'Edit';
   final DateTime studyTime;
   final DateTime playTime;
   EditPage(this.studyTime, this.playTime);
@@ -17,7 +17,6 @@ class EditPage extends StatefulWidget {
 class _EditPageState extends State<EditPage> with WidgetsBindingObserver {
   DateTime _studyTime; // 勉強した時間
   DateTime _playTime; // 遊んだ時間
-  DateTime _differenceTime; // 勉強した時間 - 遊んだ時間
   bool _isChanged;
 
   @override
@@ -30,7 +29,6 @@ class _EditPageState extends State<EditPage> with WidgetsBindingObserver {
   void _initialize() {
     _studyTime = widget.studyTime;
     _playTime = widget.playTime;
-    _differenceTime = DateTime.utc(0, 0, 0).add(_studyTime.difference(_playTime));
     _isChanged = false;
   }
 
