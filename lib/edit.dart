@@ -1,39 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_picker/flutter_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import 'package:study_timer/timeKeeper.dart';
 
 /// 編集ページ
 class EditPage extends StatefulWidget {
   final String title = 'Edit';
-  final DateTime studyTime;
-  final DateTime playTime;
-  EditPage(this.studyTime, this.playTime);
 
   @override
   _EditPageState createState() => _EditPageState();
 }
 
 /// タイマーページの状態を管理するクラス
-class _EditPageState extends State<EditPage> with WidgetsBindingObserver {
+class _EditPageState extends State<EditPage> {
   DateTime _studyTime; // 勉強した時間
   DateTime _playTime; // 遊んだ時間
-  bool _isChanged;
+  bool _isChanged = false;
 
   @override
-  void initState() {
-    super.initState();
-    _initialize();
-  }
-
-  // 初期化処理
-  void _initialize() {
-    _studyTime = widget.studyTime;
-    _playTime = widget.playTime;
-    _isChanged = false;
+  void didChangeDependencies() {
+    TimeKeeper timeKeeper = context.watch<TimeKeeper>();
+    _studyTime = timeKeeper.studyTime;
+    _playTime = timeKeeper.playTime;
+    super.didChangeDependencies();
   }
 
   @override
   Widget build(BuildContext context) {
+    TimeKeeper timeKeeper = context.watch<TimeKeeper>();
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
@@ -118,9 +114,11 @@ class _EditPageState extends State<EditPage> with WidgetsBindingObserver {
                       child: Text('Save'),
                       onPressed: !_isChanged
                           ? null
-                          : () => {
-                                Navigator.pop(context, {'studyTime': _studyTime, 'playTime': _playTime})
-                              },
+                          : () {
+                              timeKeeper.studyTime = _studyTime;
+                              timeKeeper.playTime = _playTime;
+                              Navigator.pop(context);
+                            },
                       style: ElevatedButton.styleFrom(
                         primary: Colors.blue,
                         onPrimary: Colors.white,
