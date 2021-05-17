@@ -20,7 +20,7 @@ class _EditPageState extends State<EditPage> {
 
   @override
   void didChangeDependencies() {
-    TimeKeeper timeKeeper = context.watch<TimeKeeper>();
+    TimeKeeper timeKeeper = context.read<TimeKeeper>();
     _studyTime = timeKeeper.studyTime;
     _playTime = timeKeeper.playTime;
     super.didChangeDependencies();

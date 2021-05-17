@@ -38,16 +38,39 @@ class TimerApp extends StatelessWidget {
 }
 
 /// タイマーページ
-class TimerPage extends StatelessWidget {
+class TimerPage extends StatefulWidget {
   final String title = 'Study Timer';
+  @override
+  _TimerPageState createState() => _TimerPageState();
+}
+
+class _TimerPageState extends State<TimerPage> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  /// アプリのライフサイクルが変更された際に実行される処理
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    TimeKeeper timeKeeper = context.read<TimeKeeper>();
+    if (state == AppLifecycleState.paused) {
+      print('app is paused.');
+      timeKeeper.handleOnPaused();
+    } else if (state == AppLifecycleState.resumed) {
+      print('app is resumed.');
+      timeKeeper.handleOnResumed();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     TimeKeeper timeKeeper = context.watch<TimeKeeper>();
 
     /// 編集画面を表示する
-    void _startEdit() async {
-      final result = await Navigator.push(
+    void _startEdit() {
+      Navigator.push(
         context,
         MaterialPageRoute(
             builder: (context) => ChangeNotifierProvider.value(
@@ -55,9 +78,6 @@ class TimerPage extends StatelessWidget {
                   child: EditPage(),
                 )),
       );
-      if (result == null) return;
-      timeKeeper.studyTime = result['studyTime'];
-      timeKeeper.playTime = result['playTime'];
     }
 
     /// タイマー終了通知をダイアログ表示
@@ -122,7 +142,7 @@ class TimerPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         // ステートが所属するwidget情報には`widget`でアクセスできる
-        title: Text(title),
+        title: Text(widget.title),
       ),
       body: Center(
         // 一つの子を持ち、中央に配置するレイアウト用のwidget
